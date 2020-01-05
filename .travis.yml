@@ -1,0 +1,27 @@
+sudo: required
+services:
+  - docker
+
+before_install:
+  - docker build -t aniekannu/react-test -f ./client/Dockerfile.dev ./client
+
+  # primary test running section
+  # if any of the scripts exits with the status code other than of zero,
+  # then Travis CI is going to assume that our build failed
+script:
+  - docker run -e CI=true aniekannu/react-test npm test
+
+after_success:
+  - docker build -t aniekannu/multi-client ./client
+  - docker build -t aniekannu/multi-nginx ./nginx
+  - docker build -t aniekannu/multi-server ./server
+  - docker build -t aniekannu/multi-worker ./worker
+
+  # log in to the docker CLI
+  - echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_ID" --password-stdin 
+  
+  # take those images and push them to Dockerhub
+  - docker push aniekannu/multi-client
+  - docker push aniekannu/multi-nginx
+  - docker push aniekannu/multi-server
+  - docker push aniekannu/multi-worker
